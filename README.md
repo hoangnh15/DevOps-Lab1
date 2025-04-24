@@ -29,6 +29,7 @@ Trước khi chạy mã nguồn, bạn cần cài đặt và cấu hình các c�
 5.  **Git:** Cài đặt Git để clone repository(nếu cần thiết).
 
 ## Cấu trúc thư mục
+```
 DEVOPS-LAB1/
 ├── Cloudformation/     # Chứa mã nguồn CloudFormation
 ├── Terraform/          # Chứa mã nguồn Terraform
@@ -43,7 +44,7 @@ DEVOPS-LAB1/
 ├── *.pem        # !!! File private key - KHÔNG PUSH LÊN GIT !!!
 ├── .gitignore          # Khai báo các file/thư mục bỏ qua khi commit
 └── README.md           
-
+```
 ## Hướng dẫn chạy Terraform
 
 1.  **Clone Repository (Nếu cần):**
