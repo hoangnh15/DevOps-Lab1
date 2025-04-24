@@ -1,0 +1,70 @@
+# File: DEVOPS-LAB1/.gitignore
+
+# --- Terraform Specific ---
+# Ignore local Terraform state files
+*.tfstate
+*.tfstate.*
+
+# Ignore crash log files
+crash.log
+crash.*.log
+
+# Ignore exclude *.tfvars files to prevent sensitive variable values accidentally being committed
+# Include example files though
+*.tfvars
+!*.tfvars.example
+
+# Ignore override files as they are usually environment-specific
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore Terraform plan files
+*.tfplan
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+
+# Ignore Terraform plugin directories and lock files specific to local runs
+.terraform/
+
+# --- Files seen in user's screenshot to ignore ---
+# Ignore Terraform executable if accidentally included
+terraform.exe
+*.exe
+
+# !!!! CRITICAL: Ignore private key files !!!!
+*.pem
+
+# --- CloudFormation / SAM Specific (Optional, if using AWS SAM CLI) ---
+.aws-sam/
+
+# --- OS Specific ---
+# macOS
+.DS_Store
+*.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+
+# --- IDE Specific ---
+# VSCode
+.vscode/
+
+# IntelliJ / PyCharm / etc.
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# --- Other ---
+# Ignore sensitive environment files
+.env*
+!.env.example
