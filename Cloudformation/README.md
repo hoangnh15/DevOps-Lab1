@@ -100,10 +100,4 @@ aws cloudformation delete-stack --stack-name devops-lab1
 * File `main.yaml` hoặc `template.yaml` có thể dùng làm bài thử nghiệm bổ sung hoặc cấu trúc khác.
 * Nếu triển khai bị lỗi, kiểm tra lại các dependency giữa các stack/module và đảm bảo KeyPair đã tồn tại.
 
----
 
-## 📬 Liên hệ
-
-**Sinh viên:** Lê Hoàng Tú
-**Trường:** Đại học CNTT – ĐHQG TP.HCM
-**Môn:** NT548 – DevOps & Cloud Computing
