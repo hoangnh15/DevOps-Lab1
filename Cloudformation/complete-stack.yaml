@@ -1,0 +1,397 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  CloudFormation stack for DevOps Lab 01 (NT548) - Creates VPC, Subnets,
+  IGW, NAT GWs, Route Tables, Security Groups, and EC2 Instances.
+
+Parameters:
+  ProjectName:
+    Description: Name of the project (used for tagging resources).
+    Type: String
+    Default: devops-lab01-N14 # Lấy từ Terraform vars
+
+  MyIP:
+    Description: Your public IP address for SSH access to the Public EC2 instance (must end with /32).
+    Type: String
+    Default: 14.169.92.20/32 # Lấy từ Terraform vars
+
+  KeyPairName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances.
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: N14-Lab1 # Lấy từ Terraform vars
+
+  InstanceType:
+    Description: EC2 instance type (e.g., t2.micro for Free Tier).
+    Type: String
+    Default: t2.micro # Lấy từ Terraform vars
+    AllowedValues:
+      - t2.micro
+      - t3.micro
+      - t3.small
+      - m5.large
+
+  AmiId:
+    Description: AMI ID for EC2 instances (must exist in the selected region).
+    Type: AWS::EC2::Image::Id
+    Default: ami-084568db4383264d4 # Lấy từ Terraform vars (Amazon Linux 2 in us-east-1)
+
+  VpcCidrBlock:
+    Description: CIDR block for the VPC.
+    Type: String
+    Default: 10.10.0.0/16
+
+  PublicSubnet1Cidr:
+    Description: CIDR block for the first Public Subnet (AZ A).
+    Type: String
+    Default: 10.10.1.0/24
+
+  PublicSubnet2Cidr:
+    Description: CIDR block for the second Public Subnet (AZ B).
+    Type: String
+    Default: 10.10.2.0/24
+
+  PrivateSubnet1Cidr:
+    Description: CIDR block for the first Private Subnet (AZ A).
+    Type: String
+    Default: 10.10.101.0/24
+
+  PrivateSubnet2Cidr:
+    Description: CIDR block for the second Private Subnet (AZ B).
+    Type: String
+    Default: 10.10.102.0/24
+
+  AvailabilityZone1:
+    Description: First Availability Zone (e.g., us-east-1a).
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: us-east-1a
+
+  AvailabilityZone2:
+    Description: Second Availability Zone (e.g., us-east-1b).
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: us-east-1b
+
+Resources:
+  # --- 1. VPC ---
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidrBlock
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-vpc-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # --- 2. Internet Gateway ---
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-igw-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # --- 3. Subnets ---
+  PublicSubnet1: # AZ 1
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Ref AvailabilityZone1
+      CidrBlock: !Ref PublicSubnet1Cidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-public-subnet-1-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Tier
+          Value: Public
+  PublicSubnet2: # AZ 2
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Ref AvailabilityZone2
+      CidrBlock: !Ref PublicSubnet2Cidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-public-subnet-2-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Tier
+          Value: Public
+
+  PrivateSubnet1: # AZ 1
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Ref AvailabilityZone1
+      CidrBlock: !Ref PrivateSubnet1Cidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-private-subnet-1-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Tier
+          Value: Private
+  PrivateSubnet2: # AZ 2
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Ref AvailabilityZone2
+      CidrBlock: !Ref PrivateSubnet2Cidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-private-subnet-2-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Tier
+          Value: Private
+
+  # --- 4. EIPs and NAT Gateways (HA) ---
+  NatEip1:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-nat-eip-1-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+    DependsOn: AttachGateway
+  NatEip2:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-nat-eip-2-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+    DependsOn: AttachGateway
+
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEip1.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-nat-gw-1-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+    DependsOn: NatEip1
+  NatGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEip2.AllocationId
+      SubnetId: !Ref PublicSubnet2
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-nat-gw-2-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+    DependsOn: NatEip2
+
+  # --- 5. Route Tables ---
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-public-rtb-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Tier
+          Value: Public
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  AssociatePublicRT1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+  AssociatePublicRT2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-private-rtb-1-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Tier
+          Value: Private
+  PrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+  AssociatePrivateRT1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable1
+
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-private-rtb-2-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Tier
+          Value: Private
+  PrivateRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway2
+  AssociatePrivateRT2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable2
+
+  # --- 6. Security Groups ---
+  PublicSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${ProjectName}-public-ec2-sg-cfn
+      GroupDescription: Allow SSH from specific IP and all outbound
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref MyIP
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-public-ec2-sg-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+
+  PrivateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${ProjectName}-private-ec2-sg-cfn
+      GroupDescription: Allow SSH from Public SG and all outbound
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref PublicSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-private-ec2-sg-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # --- 7. EC2 Instances ---
+  PublicEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyPairName
+      ImageId: !Ref AmiId
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref PublicSecurityGroup
+          SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-public-ec2-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Tier
+          Value: Public
+
+  PrivateEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyPairName
+      ImageId: !Ref AmiId
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: false
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref PrivateSecurityGroup
+          SubnetId: !Ref PrivateSubnet1
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-private-ec2-cfn
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Tier
+          Value: Private
+
+Outputs:
+  VPCId:
+    Description: ID of the created VPC
+    Value: !Ref VPC
+    Export:
+      Name: !Sub ${AWS::StackName}-VPCID
+
+  PublicSubnetIds:
+    Description: IDs of the public subnets
+    Value: !Join [ ",", [ !Ref PublicSubnet1, !Ref PublicSubnet2 ] ]
+
+  PrivateSubnetIds:
+    Description: IDs of the private subnets
+    Value: !Join [ ",", [ !Ref PrivateSubnet1, !Ref PrivateSubnet2 ] ]
+
+  PublicEC2InstanceId:
+    Description: Instance ID of the Public EC2
+    Value: !Ref PublicEC2Instance
+
+  PublicEC2PublicIp:
+    Description: Public IP address of the Public EC2
+    Value: !GetAtt PublicEC2Instance.PublicIp
+
+  PrivateEC2InstanceId:
+    Description: Instance ID of the Private EC2
+    Value: !Ref PrivateEC2Instance
+
+  PrivateEC2PrivateIp:
+    Description: Private IP address of the Private EC2
+    Value: !GetAtt PrivateEC2Instance.PrivateIp
+
+  SSHCommandPublicEC2:
+    Description: Command to SSH into the Public EC2 instance
+    Value: !Sub ssh -i ${KeyPairName}.pem ec2-user@${PublicEC2Instance.PublicIp}
+

@@ -1,0 +1,69 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Main stack to orchestrate modular templates for VPC, Subnets, Internet Gateway, Security Groups, and EC2.
+
+Parameters:
+  KeyPairName:
+    Type: String
+  MyIP:
+    Type: String
+  ProjectName:
+    Type: String
+  PublicSubnet1Cidr:
+    Type: String
+  PublicSubnet2Cidr:
+    Type: String
+  PrivateSubnet1Cidr:
+    Type: String
+  PrivateSubnet2Cidr:
+    Type: String
+
+Resources:
+
+  VPCStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./vpc.yaml
+      Parameters:
+        ProjectName: !Ref ProjectName
+
+  SubnetStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./subnets.yaml
+      Parameters:
+        VpcId: !GetAtt VPCStack.Outputs.VpcId
+        PublicSubnet1Cidr: !Ref PublicSubnet1Cidr
+        PublicSubnet2Cidr: !Ref PublicSubnet2Cidr
+        PrivateSubnet1Cidr: !Ref PrivateSubnet1Cidr
+        PrivateSubnet2Cidr: !Ref PrivateSubnet2Cidr
+        ProjectName: !Ref ProjectName
+
+  IGWStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./internet-gateway.yaml
+      Parameters:
+        VpcId: !GetAtt VPCStack.Outputs.VpcId
+        PublicSubnet1Id: !GetAtt SubnetStack.Outputs.PublicSubnet1Id
+        PublicSubnet2Id: !GetAtt SubnetStack.Outputs.PublicSubnet2Id
+        ProjectName: !Ref ProjectName
+
+  SGStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./security-groups.yaml
+      Parameters:
+        VpcId: !GetAtt VPCStack.Outputs.VpcId
+        MyIP: !Ref MyIP
+        ProjectName: !Ref ProjectName
+
+  EC2Stack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./ec2.yaml
+      Parameters:
+        SubnetId: !GetAtt SubnetStack.Outputs.PublicSubnet1Id
+        SecurityGroupId: !GetAtt SGStack.Outputs.EC2SecurityGroupId
+        KeyPairName: !Ref KeyPairName
+        ProjectName: !Ref ProjectName

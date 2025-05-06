@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Launch EC2 instance in Public Subnet
+
+Parameters:
+  ProjectName:
+    Type: String
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+  SecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      SubnetId: !Ref SubnetId
+      ImageId: ami-084568db4383264d4  # Amazon Linux 2 (tùy vùng - nên cập nhật lại nếu cần)
+      SecurityGroupIds:
+        - !Ref SecurityGroupId
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-EC2'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y httpd
+          systemctl enable httpd
+          systemctl start httpd
+          echo "<h1>Deployed by CloudFormation in ${ProjectName}</h1>" > /var/www/html/index.html
+
+Outputs:
+  EC2InstanceId:
+    Value: !Ref EC2Instance
+    Description: ID of the EC2 instance

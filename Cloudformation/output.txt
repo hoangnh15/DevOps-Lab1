@@ -1,0 +1,31 @@
+PrivateEC2InstanceId
+i-0438a3aacb1ab655d
+Instance ID of the Private EC2
+-
+PrivateEC2PrivateIp
+10.10.101.82
+Private IP address of the Private EC2
+-
+PrivateSubnetIds
+subnet-0032bd637f6bac20b,subnet-023680c78c23fd32f
+IDs of the private subnets
+-
+PublicEC2InstanceId
+i-00c93360021c2b3bb
+Instance ID of the Public EC2
+-
+PublicEC2PublicIp
+98.80.189.217
+Public IP address of the Public EC2
+-
+PublicSubnetIds
+subnet-0d5ab575abcb4a961,subnet-0a43113cdc0f85b1d
+IDs of the public subnets
+-
+SSHCommandPublicEC2
+ssh -i N14-Lab1.pem ec2-user@98.80.189.217
+Command to SSH into the Public EC2 instance
+-
+VPCId
+vpc-0e58106f77e7842a8
+ID of the created VPC
