@@ -7,22 +7,22 @@ Parameters:
   ProjectName:
     Description: Name of the project (used for tagging resources).
     Type: String
-    Default: devops-lab01-N14 # Lấy từ Terraform vars
+    Default: devops-lab01-N14 
 
   MyIP:
     Description: Your public IP address for SSH access to the Public EC2 instance (must end with /32).
     Type: String
-    Default: 14.169.92.20/32 # Lấy từ Terraform vars
+    Default: 14.169.92.20/32 
 
   KeyPairName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instances.
     Type: AWS::EC2::KeyPair::KeyName
-    Default: N14-Lab1 # Lấy từ Terraform vars
+    Default: N14-Lab1 
 
   InstanceType:
     Description: EC2 instance type (e.g., t2.micro for Free Tier).
     Type: String
-    Default: t2.micro # Lấy từ Terraform vars
+    Default: t2.micro 
     AllowedValues:
       - t2.micro
       - t3.micro
@@ -32,7 +32,7 @@ Parameters:
   AmiId:
     Description: AMI ID for EC2 instances (must exist in the selected region).
     Type: AWS::EC2::Image::Id
-    Default: ami-084568db4383264d4 # Lấy từ Terraform vars (Amazon Linux 2 in us-east-1)
+    Default: ami-084568db4383264d4 
 
   VpcCidrBlock:
     Description: CIDR block for the VPC.
