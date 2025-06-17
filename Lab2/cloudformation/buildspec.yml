@@ -1,0 +1,25 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.8
+    commands:
+      - pip install cfn-lint
+      - pip install taskcat
+      - aws s3 cp s3://lab2-group14/nat-gateway.yml nat-gateway.yml
+      - aws s3 cp s3://lab2-group14/route-tables.yml route-tables.yml
+      - aws s3 cp s3://lab2-group14/ec2-instances.yml ec2-instances.yml
+      - aws s3 cp s3://lab2-group14/security-group.yml security-group.yml
+      - aws s3 cp s3://lab2-group14/main.yml main.yml
+ 
+  pre_build:
+    commands:
+      - echo "Linting CloudFormation templates..."
+      - cfn-lint main.yml
+      - echo "Running Taskcat for testing..."
+      - taskcat test run
+  build:
+    commands:
+      - echo "Building and deploying CloudFormation stack..."
+      - aws cloudformation deploy --template-file main.yml --stack-name Group14Stack

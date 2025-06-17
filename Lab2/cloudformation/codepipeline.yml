@@ -1,0 +1,225 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  GitHubOwner:
+    Type: String
+    Description: GitHub repository owner (e.g., username or organization)
+Resources:
+  AWSCodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "AWSCodePipelineServiceRole-us-east-1-Group14CodePipeline"
+      Path: "/service-role/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "codepipeline.amazonaws.com"
+            Action: "sts:AssumeRole"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AdministratorAccess
+      Policies:
+        - PolicyName: "CodePipelineServicePolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                  - codebuild:*
+                  - cloudformation:*
+                  - iam:*
+                  - secretsmanager:GetSecretValue
+                  - logs:*
+                Resource: "*"
+
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "codebuild-Group14CodeBuild-service-role"
+      Path: "/service-role/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "codebuild.amazonaws.com"
+            Action: "sts:AssumeRole"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AdministratorAccess
+      Policies:
+        - PolicyName: "CodeBuildService"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                  - codebuild:*
+                  - cloudformation:*
+                  - iam:*
+                  - secretsmanager:GetSecretValue
+                  - logs:*
+                Resource: "*"
+
+  Group14CodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: Group14CodeBuild
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: "buildspec.yml"
+        InsecureSsl: false
+      Artifacts:
+        Type: CODEPIPELINE
+        Name: Group14CodeBuild
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: "aws/codebuild/amazonlinux2-x86_64-standard:5.0"
+        ComputeType: BUILD_GENERAL1_SMALL
+        PrivilegedMode: false
+        ImagePullCredentialsType: CODEBUILD
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      TimeoutInMinutes: 60
+      QueuedTimeoutInMinutes: 480
+      EncryptionKey: "arn:aws:kms:us-east-1:122610523504:alias/aws/s3"
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+        S3Logs:
+          Status: DISABLED
+          EncryptionDisabled: false
+      Tags: []  
+
+  CodePipelineBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: "codepipeline-us-east-1-lab2-group14"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+            BucketKeyEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        IgnorePublicAcls: false
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: false
+      AccessControl: Private # Ensures that only the owner has full control.
+  
+  CodePipelineBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CodePipelineBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: "*"
+            Action: "s3:*"
+            Resource:
+              - "arn:aws:s3:::codepipeline-us-east-1-lab2-group14"
+              - "arn:aws:s3:::codepipeline-us-east-1-lab2-group14/*"
+
+  CloudFormationRole:
+    Type: AWS::IAM::Role
+    DeletionPolicy: Retain
+    Properties:
+      RoleName: "CloudformationRole"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: ""
+            Effect: "Allow"
+            Principal:
+              Service: "cloudformation.amazonaws.com"
+            Action: "sts:AssumeRole"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AdministratorAccess
+      # Policies:
+      #   - PolicyName: "CloudFormationServicePolicy"
+      #     PolicyDocument:
+      #       Version: "2012-10-17"
+      #       Statement:
+      #         - Effect: Allow
+      #           Action:
+      #             - s3:*
+      #             - ec2:*
+      #             - iam:*
+      #             - cloudwatch:*
+      #             - autoscaling:*
+      #             - rds:*
+      #             - lambda:*
+      #             - secretsmanager:GetSecretValue
+      #             - dynamodb:*
+      #             - sns:*
+      #             - sqs:*
+      #             - logs:*
+      #           Resource: "*"
+
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: Group14CodePipeline
+      RoleArn: !GetAtt AWSCodePipelineServiceRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref CodePipelineBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: "1"
+              Configuration:
+                Branch: main
+                Owner: !Ref GitHubOwner
+                Repo: NT548-lab2-group14-CloudFormation-CodePipeline
+                PollForSourceChanges: "false"
+                OAuthToken: '{{resolve:secretsmanager:GitHub/Token:SecretString}}'
+              OutputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: Group14CodeBuild
+              InputArtifacts:
+                - Name: SourceArtifact
+              OutputArtifacts:
+                - Name: BuildArtifact
+              RunOrder: 1
+        - Name: Deploy
+          Actions:
+            - Name: Deploy
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_IAM
+                RoleArn: arn:aws:iam::122610523504:role/CloudformationRole
+                StackName: Group14Stack
+                TemplatePath: SourceArtifact::main.yml
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+      

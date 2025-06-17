@@ -1,6 +1,6 @@
 #create s3
-resource "aws_s3_bucket" "group9_bucket" {
-    bucket = "s3statebackend-group9-3183"
+resource "aws_s3_bucket" "group14_bucket" {
+    bucket = "s3statebackend-group14-3183"
     force_destroy = true
     versioning {
       enabled = true
@@ -22,7 +22,7 @@ resource "aws_s3_bucket" "group9_bucket" {
 }
 # terraform {
 #     backend "s3" {
-#     bucket = "s3statebackend-group9-3183"
+#     bucket = "s3statebackend-group14-3183"
 #     key = "global/mystatefile/terraform.tfstate"
 #     region = "us-east-1"
 #     encrypt = true
