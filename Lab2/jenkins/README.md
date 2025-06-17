@@ -33,7 +33,7 @@ This is a simple project I created as a homework for my university course. This 
 
 ## Repository Structure:
 ```txt
-CI-CD-pipeline-with-Jenkins
+jenkins
   ├── app
   │   ├── main.py
   │   ├── schema.py
