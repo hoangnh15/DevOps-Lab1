@@ -83,9 +83,9 @@ DEVOPS-LAB1/
     ```
     Nhập `yes` khi được hỏi xác nhận.
 
-## Hướng dẫn chạy CloudFormation
 
-`<Coming Soon>`
+
+
 
 ## Kiểm tra:
 
