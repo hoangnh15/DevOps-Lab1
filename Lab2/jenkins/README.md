@@ -61,9 +61,7 @@ jenkins
   ├── models
   │   └── model.pkl
   ├── README.md
-  ├── requirements.txt
-  └── tests
-      └── test_model_correctness.py
+  └── requirements.txt
 
 
 ```
