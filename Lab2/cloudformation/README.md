@@ -15,3 +15,36 @@ STEP:
 - aws s3 cp [Name of modules].yml s3://cloudformation-modules
 - aws cloudformation delete-stack --stack-name [Name of Stack]
 - aws cloudformation create-stack --template-body file://[URL to the sample file in your PC] --stack-name [Name of Stack] --capabilities CAPABILITY_NAMED_IAM --parameter-overrides GitHubOwner=[GitHub Username]
+
+## Networking Diagram
+
+Below is a conceptual networking diagram illustrating the setup:
+
+```
++-------------------+       +-------------------+
+|   Public Subnet   |       |   Private Subnet  |
+|                   |       |                   |
+|  +-------------+  |       |  +-------------+  |
+|  |  EC2 Public |  |       |  | EC2 Private |  |
+|  |  Instance   |  |       |  |  Instance   |  |
+|  +-------------+  |       |  +-------------+  |
+|       |           |       |                   |
+|       | ElasticIP |       |                   |
++-------+-----------+       +-------------------+
+        |                           |
+        +---------------------------+
+        |                           |
++-------v---------------------------v-------+
+|                VPC                        |
+|                                           |
+|  +-----------------+   +----------------+ |
+|  | Internet Gateway|   |   NAT Gateway  | |
+|  +-----------------+   +----------------+ |
+|                                           |
++-------------------------------------------+
+```
+
+- **Public Subnet**: Contains the public EC2 instance with an Elastic IP, allowing it to communicate with the internet.
+- **Private Subnet**: Contains the private EC2 instance, which can only communicate with the internet through the NAT Gateway.
+- **Internet Gateway**: Provides internet access to resources in the public subnet.
+- **NAT Gateway**: Allows resources in the private subnet to access the internet without exposing them to inbound traffic.
