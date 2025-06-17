@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+
+    environment {
+        registry = '891377192403.dkr.ecr.us-east-1.amazonaws.com/group14'
+        awsRegion = 'us-east-1'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/meowwkhoa/CI-CD-pipeline-with-Jenkins']])
+            }
+        }
+
+        stage('Build and Push Image') {
+            steps {
+                script {
+                    echo 'Building and pushing FastAPI app image..'
+                    dockerImage = docker.build registry 
+                    dockerImage.tag("$BUILD_NUMBER")
+                    sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 891377192403.dkr.ecr.us-east-1.amazonaws.com'
+                    sh 'docker push 891377192403.dkr.ecr.us-east-1.amazonaws.com/group14:$BUILD_NUMBER'
+                }
+            }
+        }
+
+        stage('Deploy FastAPI') {
+            steps {
+                echo 'Deploying FastAPI app with Helm..'
+                sh "helm upgrade first --install deployment-helmchart --namespace model-serving --set image.tag=$BUILD_NUMBER"
+            }
+        }
+
+    }
+}

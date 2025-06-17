@@ -48,3 +48,12 @@ Below is a conceptual networking diagram illustrating the setup:
 - **Private Subnet**: Contains the private EC2 instance, which can only communicate with the internet through the NAT Gateway.
 - **Internet Gateway**: Provides internet access to resources in the public subnet.
 - **NAT Gateway**: Allows resources in the private subnet to access the internet without exposing them to inbound traffic.
+
+
+## Deploy AWS CodePipeline 
+
+### Step 1: Clone and Push Source code from this repository into CodeCommit
+
+### Step 2: Create Project from AWS CodeBuild
+
+### Step 3: Create Pipeline to Deploy AWS infrastructure with CloudFormation 
