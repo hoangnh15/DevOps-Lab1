@@ -12,10 +12,6 @@
 <!-- /code_chunk_output -->
 
 
-
-## Introduction:
-Using Jenkins to automate the process of building, testing and deploying a microservice application to AWS Elastic Kubernetes Service with SonarQube for the NT548.P11 course - Fall 2024 semester at University of Information Technology - VNUHCM.
-
 ## Pipeline Overview:
 This is a simple project I created as a homework for my university course. This repo will help and guide you to build and serve ML model as in a production environment (AWS). I also used tool & technologies to quickly deploy the ML system into production and automate processes during the development and deployment of the ML system.
 
